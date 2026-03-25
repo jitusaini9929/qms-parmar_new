@@ -1,0 +1,31 @@
+[
+  {
+    "code": "Q-0001",
+    "exam": "RSSB 4th Grade",
+    "exam-date": "15/07/2025",
+    "exam-time": "09:00 AM",
+    "subject": "General Knoledge",
+    "topic": "GK test001",
+    "tags": ["gk", "india"],
+    "content": {
+      "en": {
+        "text": "What is the capital of India?",
+        "solution": "The capital of India is Delhi.",
+        "options": [
+          { "text": "Mumbai", "correctOption": false },
+          { "text": "Delhi", "correctOption": true },
+          { "text": "Kolkata", "correctOption": false }
+        ]
+      },
+      "hi": {
+        "text": "भारत की राजधानी क्या है?",
+        "solution": "भारत की राजधानी दिल्ली है।",
+        "options": [
+          { "text": "मुंबई", "correctOption": false },
+          { "text": "दिल्ली", "correctOption": true },
+          { "text": "कोलकाता", "correctOption": false }
+        ]
+      }
+    }
+  }
+]
