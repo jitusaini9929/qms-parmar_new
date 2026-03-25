@@ -14,6 +14,7 @@ import {
   Send,
   Building,
   GraduationCap,
+  RotateCcw,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -494,28 +495,31 @@ export default function ReviewPage() {
             </Card>
 
             {/* Review Actions */}
-            {currentReview.status === "PENDING" && (
-              <Card className="border-primary/30">
-                <CardHeader className="pb-3">
-                  <CardTitle className="text-sm uppercase text-primary/70 tracking-wider flex items-center gap-2">
-                    <ClipboardCheck className="h-4 w-4" /> Review Actions
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
+            <Card className={currentReview.status === "PENDING" ? "border-primary/30" : "border-border"}>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-sm uppercase text-primary/70 tracking-wider flex items-center gap-2">
+                  <ClipboardCheck className="h-4 w-4" /> 
+                  {currentReview.status === "PENDING" ? "Review Actions" : "Update Status"}
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {currentReview.status !== "APPROVED" && (
                   <Button
                     className="w-full gap-2 bg-emerald-600 hover:bg-emerald-700 text-white"
                     onClick={() => handleReview("APPROVED")}
                     disabled={actionLoading}
                   >
-                    {actionLoading ? (
+                    {actionLoading && statusFilter === "APPROVED" ? (
                       <Loader2 className="h-4 w-4 animate-spin" />
                     ) : (
                       <CheckCircle2 className="h-4 w-4" />
                     )}
-                    Approve Question
+                    {currentReview.status === "PENDING" ? "Approve Question" : "Change to Approved"}
                   </Button>
+                )}
 
-                  {!showRejectForm ? (
+                {currentReview.status !== "REJECTED" && (
+                  !showRejectForm ? (
                     <Button
                       variant="outline"
                       className="w-full gap-2 border-rose-200 text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/20"
@@ -523,7 +527,7 @@ export default function ReviewPage() {
                       disabled={actionLoading}
                     >
                       <XCircle className="h-4 w-4" />
-                      Reject Question
+                      {currentReview.status === "PENDING" ? "Reject Question" : "Change to Rejected"}
                     </Button>
                   ) : (
                     <div className="space-y-3 p-4 rounded-lg border border-rose-200 bg-rose-50/50 dark:bg-rose-950/10">
@@ -555,19 +559,27 @@ export default function ReviewPage() {
                           onClick={() => handleReview("REJECTED")}
                           disabled={actionLoading || !rejectComment.trim()}
                         >
-                          {actionLoading ? (
-                            <Loader2 className="h-4 w-4 animate-spin" />
-                          ) : (
-                            <Send className="h-4 w-4" />
-                          )}
+                          <Send className="h-4 w-4" />
                           Submit Rejection
                         </Button>
                       </div>
                     </div>
-                  )}
-                </CardContent>
-              </Card>
-            )}
+                  )
+                )}
+
+                {currentReview.status !== "PENDING" && (
+                  <Button
+                    variant="outline"
+                    className="w-full gap-2 text-amber-600 border-amber-200 hover:bg-amber-50 dark:hover:bg-amber-950/20"
+                    onClick={() => handleReview("PENDING")}
+                    disabled={actionLoading}
+                  >
+                    <RotateCcw className="h-4 w-4" />
+                    Mark as Pending
+                  </Button>
+                )}
+              </CardContent>
+            </Card>
 
             {/* Navigation */}
             <div className="flex items-center justify-between">

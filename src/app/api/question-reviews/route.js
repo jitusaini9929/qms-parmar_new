@@ -5,6 +5,10 @@ import connectDB from "@/lib/db";
 import QuestionReview from "@/models/QuestionReview";
 import Question from "@/models/Question";
 import ReviewerPermission from "@/models/ReviewerPermission";
+import Exam from "@/models/Exam";
+import Shift from "@/models/Shift";
+import Subject from "@/models/Subject";
+import Topic from "@/models/Topic";
 
 // GET: Fetch questions for review (supports pagination, filtering by exam)
 export async function GET(req) {
@@ -132,9 +136,9 @@ export async function PUT(req) {
     const body = await req.json();
     const { questionId, status, comments } = body;
 
-    if (!questionId || !["APPROVED", "REJECTED"].includes(status)) {
+    if (!questionId || !["APPROVED", "REJECTED", "PENDING"].includes(status)) {
       return NextResponse.json(
-        { message: "questionId and valid status (APPROVED/REJECTED) required" },
+        { message: "questionId and valid status (APPROVED/REJECTED/PENDING) required" },
         { status: 400 }
       );
     }
