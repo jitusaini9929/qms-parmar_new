@@ -15,6 +15,7 @@ export default function CreateUserPage() {
   const [roles, setRoles] = useState([
     { _id: 'ADMIN', name: 'Admin' },
     { _id: 'REVIEWER', name: 'Question Reviewer' },
+    { _id: 'CONTENT_WRITER', name: 'Content Writer' },
     { _id: 'USER', name: 'User' }
   ]);
   const [selectedRole, setSelectedRole] = useState('USER');

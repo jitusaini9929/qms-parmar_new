@@ -7,6 +7,7 @@ import Collection from "@/models/Collection";
 import Exam from "@/models/Exam";
 import Subject from "@/models/Subject";
 import ReviewerPermission from "@/models/ReviewerPermission";
+import WriterPermission from "@/models/WriterPermission";
 
 export const revalidate = 300; // Disable caching for real-time stats
 export async function GET() {
@@ -25,6 +26,18 @@ export async function GET() {
       
       return NextResponse.json({
         role: "REVIEWER",
+        totalBoards,
+        totalExams
+      });
+    }
+
+    if (session.user.role === "CONTENT_WRITER") {
+      const permissions = await WriterPermission.find({ writer: session.user.id }).lean();
+      const totalBoards = permissions.length;
+      const totalExams = permissions.reduce((acc, p) => acc + (p.exams ? p.exams.length : 0), 0);
+      
+      return NextResponse.json({
+        role: "CONTENT_WRITER",
         totalBoards,
         totalExams
       });

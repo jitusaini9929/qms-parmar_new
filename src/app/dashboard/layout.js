@@ -22,14 +22,18 @@ const reviewerMenu = [
   { title: "Question Review", icon: "ClipboardCheck", url: "/dashboard/review" },
 ];
 
+const writerMenu = [
+  { title: "Rejected Questions", icon: "PenLine", url: "/dashboard/writer" },
+];
+
 
 export default async function AdminLayout({ children }) {
   const session = await getServerSession(authOptions);
   const role = session?.user?.role;
 
   // Pick the correct sidebar menu based on role
-  const menu = role === "REVIEWER" ? reviewerMenu : adminMenu;
-  const portalName = role === "REVIEWER" ? "Reviewer Panel" : "Dashboard";
+  const menu = role === "REVIEWER" ? reviewerMenu : role === "CONTENT_WRITER" ? writerMenu : adminMenu;
+  const portalName = role === "REVIEWER" ? "Reviewer Panel" : role === "CONTENT_WRITER" ? "Writer Panel" : "Dashboard";
 
   return (
     <SidebarProvider>

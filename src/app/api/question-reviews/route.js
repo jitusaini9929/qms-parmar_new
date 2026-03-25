@@ -5,6 +5,7 @@ import connectDB from "@/lib/db";
 import QuestionReview from "@/models/QuestionReview";
 import Question from "@/models/Question";
 import ReviewerPermission from "@/models/ReviewerPermission";
+import WriterPermission from "@/models/WriterPermission";
 import Exam from "@/models/Exam";
 import Shift from "@/models/Shift";
 import Subject from "@/models/Subject";
@@ -33,10 +34,23 @@ export async function GET(req) {
       );
     }
 
-    // Verify reviewer has access to this exam
+    // Verify reviewer/writer has access to this exam
     if (session.user.role === "REVIEWER") {
       const hasAccess = await ReviewerPermission.findOne({
         reviewer: session.user.id,
+        exams: examId,
+      });
+      if (!hasAccess) {
+        return NextResponse.json(
+          { message: "No access to this exam" },
+          { status: 403 }
+        );
+      }
+    }
+
+    if (session.user.role === "CONTENT_WRITER") {
+      const hasAccess = await WriterPermission.findOne({
+        writer: session.user.id,
         exams: examId,
       });
       if (!hasAccess) {

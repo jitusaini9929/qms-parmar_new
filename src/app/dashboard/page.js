@@ -89,6 +89,50 @@ export default function DashboardPage() {
       </div>
     );
   }
+  if (stats?.role === "CONTENT_WRITER") {
+    return (
+      <div className="space-y-6 max-w-[1600px] mx-auto">
+        {/* Welcome Header */}
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div>
+            <h1 className="text-3xl font-bold tracking-tight">Writer Dashboard</h1>
+            <p className="text-muted-foreground">Welcome back! Here is a summary of your assigned responsibilities.</p>
+          </div>
+        </div>
+
+        {/* Stats Grid */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <Card className="hover:shadow-md transition-shadow cursor-pointer border-border/60">
+            <Link href="/dashboard/writer">
+              <CardContent className="flex items-center justify-between pt-6">
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">Assigned Boards</p>
+                  <h3 className="text-2xl font-bold mt-1">{stats.totalBoards || 0}</h3>
+                </div>
+                <div className={`p-3 rounded-xl bg-muted/50 text-blue-500`}>
+                  <Building className="h-6 w-6" />
+                </div>
+              </CardContent>
+            </Link>
+          </Card>
+
+          <Card className="hover:shadow-md transition-shadow cursor-pointer border-border/60">
+            <Link href="/dashboard/writer">
+              <CardContent className="flex items-center justify-between pt-6">
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">Assigned Exams</p>
+                  <h3 className="text-2xl font-bold mt-1">{stats.totalExams || 0}</h3>
+                </div>
+                <div className={`p-3 rounded-xl bg-muted/50 text-purple-500`}>
+                  <GraduationCap className="h-6 w-6" />
+                </div>
+              </CardContent>
+            </Link>
+          </Card>
+        </div>
+      </div>
+    );
+  }
 
   const statCards = [
     { title: "Questions", value: stats.totalQuestions, icon: Database, color: "text-blue-500", link: "/dashboard/questions" },

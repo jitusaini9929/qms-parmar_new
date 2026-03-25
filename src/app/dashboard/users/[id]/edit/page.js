@@ -34,21 +34,22 @@ export default function EditUserPage({ params }) {
         <CardContent>
           <form onSubmit={handleUpdate} className="space-y-4">
             <div>
-              <Label>Name</Label>
+              <Label className="mb-2">Name</Label>
               <Input value={user.name} onChange={(e) => setUser({...user, name: e.target.value})} />
             </div>
             <div>
-              <Label>Role</Label>
+              <Label className="mb-2">Role</Label>
               <Select value={user.role} onValueChange={(val) => setUser({...user, role: val})}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="USER">USER</SelectItem>
+                  <SelectItem value="REVIEWER">REVIEWER</SelectItem>
                   <SelectItem value="ADMIN">ADMIN</SelectItem>
+                  <SelectItem value="CONTENT_WRITER">CONTENT WRITER</SelectItem>
                 </SelectContent>
               </Select>
             </div>
             <div>
-              <Label>Status</Label>
+              <Label className="mb-2">Status</Label>
               <Select value={user.status} onValueChange={(val) => setUser({...user, status: val})}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>

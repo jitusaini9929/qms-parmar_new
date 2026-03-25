@@ -16,12 +16,19 @@ import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { Loader2, ShieldCheck, Building, GraduationCap } from "lucide-react";
 
-export default function ManagePermissionsDialog({ open, onOpenChange, user }) {
+/**
+ * Generic permissions dialog for both Reviewer and Content Writer roles.
+ * @param {string} permissionType - "reviewer" (default) or "writer"
+ */
+export default function ManagePermissionsDialog({ open, onOpenChange, user, permissionType = "reviewer" }) {
   const [boards, setBoards] = useState([]);
   const [examsByBoard, setExamsByBoard] = useState({});
   const [selectedPermissions, setSelectedPermissions] = useState({});
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+
+  const apiEndpoint = permissionType === "writer" ? "/api/writer-permissions" : "/api/reviewer-permissions";
+  const idParam = permissionType === "writer" ? "writerId" : "reviewerId";
 
   // Fetch boards, exams, and existing permissions when dialog opens
   useEffect(() => {
@@ -34,7 +41,7 @@ export default function ManagePermissionsDialog({ open, onOpenChange, user }) {
         const [boardsRes, examsRes, permsRes] = await Promise.all([
           fetch("/api/boards"),
           fetch("/api/exams"),
-          fetch(`/api/reviewer-permissions?reviewerId=${user._id}`),
+          fetch(`${apiEndpoint}?${idParam}=${user._id}`),
         ]);
 
         const boardsData = await boardsRes.json();
@@ -74,7 +81,7 @@ export default function ManagePermissionsDialog({ open, onOpenChange, user }) {
     };
 
     fetchData();
-  }, [open, user?._id]);
+  }, [open, user?._id, apiEndpoint, idParam]);
 
   const toggleBoard = (boardId) => {
     setSelectedPermissions((prev) => {
@@ -113,11 +120,11 @@ export default function ManagePermissionsDialog({ open, onOpenChange, user }) {
         .filter(([_, exams]) => exams.length > 0)
         .map(([board, exams]) => ({ board, exams }));
 
-      const res = await fetch("/api/reviewer-permissions", {
+      const res = await fetch(apiEndpoint, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          reviewerId: user._id,
+          [idParam]: user._id,
           permissions,
         }),
       });
@@ -137,6 +144,8 @@ export default function ManagePermissionsDialog({ open, onOpenChange, user }) {
     }
   };
 
+  const roleLabel = permissionType === "writer" ? "Content Writer" : "Question Reviewer";
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
@@ -148,6 +157,7 @@ export default function ManagePermissionsDialog({ open, onOpenChange, user }) {
           <DialogDescription>
             Assign board and exam access for{" "}
             <span className="font-semibold text-foreground">{user?.name}</span>
+            <Badge variant="secondary" className="ml-2 text-[10px]">{roleLabel}</Badge>
           </DialogDescription>
         </DialogHeader>
 

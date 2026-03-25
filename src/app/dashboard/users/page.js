@@ -46,6 +46,7 @@ export default function UsersPage() {
 
   // Manage Permissions Dialog state
   const [permDialogOpen, setPermDialogOpen] = useState(false);
+  const [writerPermDialogOpen, setWriterPermDialogOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState(null);
 
   useEffect(() => {
@@ -226,6 +227,17 @@ export default function UsersPage() {
                                 <ShieldCheck className="mr-2 h-4 w-4" /> Manage Permissions
                               </DropdownMenuItem>
                               )}
+                              {user.role === 'CONTENT_WRITER' && (
+                              <DropdownMenuItem 
+                                className="text-blue-600 font-bold focus:text-blue-600 focus:bg-blue-500/5"
+                                onClick={() => {
+                                  setSelectedUser(user);
+                                  setWriterPermDialogOpen(true);
+                                }}
+                              >
+                                <ShieldCheck className="mr-2 h-4 w-4" /> Manage Permissions
+                              </DropdownMenuItem>
+                              )}
                               <DropdownMenuSeparator />
                             {user.status === 'PENDING' ? (
                               <DropdownMenuItem 
@@ -287,11 +299,20 @@ export default function UsersPage() {
         </CardContent>
       </Card>
 
-      {/* Manage Permissions Dialog */}
+      {/* Manage Permissions Dialog — Reviewer */}
       <ManagePermissionsDialog
         open={permDialogOpen}
         onOpenChange={setPermDialogOpen}
         user={selectedUser}
+        permissionType="reviewer"
+      />
+
+      {/* Manage Permissions Dialog — Writer */}
+      <ManagePermissionsDialog
+        open={writerPermDialogOpen}
+        onOpenChange={setWriterPermDialogOpen}
+        user={selectedUser}
+        permissionType="writer"
       />
     </div>
   );

@@ -25,7 +25,7 @@ export const authOptions = {
         if (user.status === "REJECTED")
           throw new Error("User account has been rejected");
         if (user.role === "USER")
-          throw new Error("User does not have access");
+          throw new Error("User does not have portal access");
 
         return {
           id: user._id,
