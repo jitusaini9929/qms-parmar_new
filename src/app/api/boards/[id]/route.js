@@ -2,15 +2,17 @@ import { NextResponse } from "next/server";
 import connectDB from "@/lib/db";
 import Board from "@/models/Board";
 import User from "@/models/User";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import { revalidatePath } from "next/cache";
+import { requireRole } from "@/lib/auth-guard";
 
 export const revalidate = 60; // Revalidate every 60 seconds
+
 // GET a single board
 export async function GET(req, { params }) {
+  const { session, denied } = await requireRole(req, "GET", "/api/boards");
+  if (denied) return denied;
+
   const { id } = await params;
-  console.log("Fetching board with ID:", id);
   try {
     await connectDB();
     const board = await Board.findById(id).populate("createdBy", "name");
@@ -24,11 +26,11 @@ export async function GET(req, { params }) {
 
 // UPDATE a board
 export async function PUT(req, { params }) {
+  const { session, denied } = await requireRole(req, "PUT", "/api/boards");
+  if (denied) return denied;
+
   try {
     const { id } = await params;
-    const session = await getServerSession(authOptions);
-    if (!session) return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
-
     const body = await req.json();
     await connectDB();
 

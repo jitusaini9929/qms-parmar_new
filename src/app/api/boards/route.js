@@ -1,20 +1,17 @@
 import { NextResponse } from "next/server";
 import connectDB from "@/lib/db";
 import Board from "@/models/Board";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import { revalidatePath } from "next/cache";
+import { requireRole } from "@/lib/auth-guard";
 
 // This tells Next.js to cache this route and revalidate every 60 seconds
 export const revalidate = 60;
 
 export async function POST(req) {
-  try {
-    const session = await getServerSession(authOptions);
-    if (!session) {
-      return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
-    }
+  const { session, denied } = await requireRole(req, "POST", "/api/boards");
+  if (denied) return denied;
 
+  try {
     const body = await req.json();
     const { boardName, boardShortName, boardSlug, description } = body;
 
@@ -25,7 +22,7 @@ export async function POST(req) {
       boardShortName,
       boardSlug,
       description,
-      createdBy: session.user.id, // Assuming id is in session
+      createdBy: session.user.id,
     });
     revalidatePath("/api/boards");
     return NextResponse.json(newBoard, { status: 201 });
@@ -34,10 +31,18 @@ export async function POST(req) {
   }
 }
 
-export async function GET() {
+export async function GET(req) {
+  const { session, denied } = await requireRole(req, "GET", "/api/boards");
+  if (denied) return denied;
+
   try {
     await connectDB();
-    const boards = await Board.find({}).sort({ createdAt: -1 });
+    const { searchParams } = new URL(req.url);
+    const query = {};
+    if (searchParams.get("activeOnly") === "true") {
+      query.status = "ACTIVE";
+    }
+    const boards = await Board.find(query).sort({ createdAt: -1 });
     return NextResponse.json({ boards });
   } catch (error) {
     return NextResponse.json(

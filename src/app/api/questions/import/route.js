@@ -8,8 +8,7 @@ import Topic from "@/models/Topic";
 import Subject from "@/models/Subject";
 import Exam from "@/models/Exam";
 import Board from "@/models/Board";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/app/api/auth/[...nextauth]/route";
+import { requireRole } from "@/lib/auth-guard";
 import slugify from "slugify";
 
 /* -------------------------------------------------
@@ -300,10 +299,10 @@ function transformFinalJsonToQuestion(q) {
 ------------------------------------------------- */
 
 export async function POST(req) {
+  const { session, denied } = await requireRole(req, "POST", "/api/questions/import");
+  if (denied) return denied;
+
   try {
-    const session = await getServerSession(authOptions);
-    if (!session)
-      return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
 
     const { questions = [], hierarchy = {}, collection } = await req.json();
     if (!questions.length)
@@ -320,10 +319,26 @@ export async function POST(req) {
 
     /* ---------- Resolve hierarchy ---------- */
 
+    // Board is always selected from the sidebar dropdown
+    const hierarchyBoardId = hierarchy.board && hierarchy.board !== "none"
+      ? hierarchy.board
+      : null;
+
+    // Validate the selected board is active
+    if (hierarchyBoardId) {
+      const selectedBoard = await Board.findById(hierarchyBoardId);
+      if (!selectedBoard) {
+        return NextResponse.json({ message: "Selected board not found" }, { status: 400 });
+      }
+      if (selectedBoard.status === "INACTIVE") {
+        return NextResponse.json({ message: "Cannot import under an inactive board" }, { status: 400 });
+      }
+    }
+
     // For final.json, hierarchy comes per-question (Name, Date, Time, subject, topic)
     // For legacy format, hierarchy comes from the sidebar
     const hierarchyExamId = !isFinalJson
-      ? await resolveExam(hierarchy.exam, null, userId)
+      ? await resolveExam(hierarchy.exam, hierarchyBoardId, userId)
       : null;
 
     const hierarchyShiftId =
@@ -348,7 +363,7 @@ export async function POST(req) {
 
       if (isFinalJson) {
         // --- final.json flow ---
-        const boardId = await resolveBoard(q.Section_Name, userId);
+        const boardId = hierarchyBoardId;
         const examId = await resolveExam(q.Name, boardId, userId);
         const shiftId = await resolveShiftFromFinalJson(q, examId, userId);
 

@@ -37,7 +37,7 @@ export default function CreateExamPage() {
   });
 
   useEffect(() => {
-    fetch("/api/boards")
+    fetch("/api/boards?activeOnly=true")
       .then(res => res.json())
       .then(data => setBoards(data.boards || []));
   }, []);

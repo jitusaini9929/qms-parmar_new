@@ -3,7 +3,9 @@ import { BaseSidebar } from "@/components/dashboard/BaseSidebar";
 import DashboardNavbar from "@/components/dashboard/DashboardNavbar";
 import { getServerSession } from "next-auth";
 import { authOptions } from "../api/auth/[...nextauth]/route";
-import { ROLES, ROLE_PERMISSIONS } from "@/enums/role";
+import { ROLE_PERMISSIONS } from "@/enums/role";
+import RouteGuard from "@/components/dashboard/RouteGuard";
+import { ShieldAlert } from "lucide-react";
 
 
 const adminMenu = [
@@ -23,6 +25,8 @@ const reviewerMenu = [
 
 const writerMenu = [
   { title: "Rejected Questions", icon: "PenLine", url: "/dashboard/writer" },
+  { title: "Questions", icon: "HelpCircle", url: "/dashboard/questions" },
+  { title: "Collections", icon: "Layers", url: "/dashboard/collections" },
 ];
 
 
@@ -34,6 +38,8 @@ export default async function AdminLayout({ children }) {
   const menu = role === "REVIEWER" ? reviewerMenu : role === "CONTENT_WRITER" ? writerMenu : adminMenu;
   const portalName = role === "REVIEWER" ? "Reviewer Panel" : role === "CONTENT_WRITER" ? "Writer Panel" : "Dashboard";
 
+  const hasBasicAccess = ROLE_PERMISSIONS[role]?.includes("CAN_VIEW_DASHBOARD");
+
   return (
     <SidebarProvider>
       {/* Pass the main icon name as a string "ShieldCheck" */}
@@ -41,16 +47,21 @@ export default async function AdminLayout({ children }) {
       <SidebarInset>
         <DashboardNavbar portalName={portalName} />
         <main className="p-6">
-          {!ROLE_PERMISSIONS[session?.user?.role]?.includes("CAN_VIEW_DASHBOARD") ? (
-            <div className="flex flex-col items-center justify-center h-[70vh]">
-              <h2 className="text-2xl font-bold mb-4">Access Denied</h2>
+          {!hasBasicAccess ? (
+            <div className="flex flex-col items-center justify-center h-[70vh] gap-4">
+              <div className="h-16 w-16 rounded-full bg-destructive/10 flex items-center justify-center">
+                <ShieldAlert className="h-8 w-8 text-destructive" />
+              </div>
+              <h2 className="text-2xl font-bold">Access Denied</h2>
               <p className="text-center text-muted-foreground max-w-md"> 
-                You do not have the necessary permissions to access this section of the application.
+                You do not have the necessary permissions to access the dashboard.
               </p>
             </div> 
-          ) : 
-          children
-          }
+          ) : (
+            <RouteGuard role={role}>
+              {children}
+            </RouteGuard>
+          )}
         </main>
       </SidebarInset>
     </SidebarProvider>

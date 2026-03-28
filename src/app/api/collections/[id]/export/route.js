@@ -5,8 +5,12 @@ import Question from "@/models/Question";
 import { formatCollectionForExport } from "@/lib/export-utils";
 import { renderToStream } from "@react-pdf/renderer";
 import { CollectionPDF } from "@/lib/CollectionPDF";
+import { requireRole } from "@/lib/auth-guard";
 
 export async function POST(req, { params }) {
+  const { session, denied } = await requireRole(req, "POST", "/api/collections");
+  if (denied) return denied;
+
   try {
     const { id } = await params;
     const config = await req.json(); // { selectedLanguages, contentMode, fileFormat }

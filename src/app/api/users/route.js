@@ -2,8 +2,12 @@ import { NextResponse } from "next/server";
 import connectDB from "@/lib/db";
 import User from "@/models/User";
 import bcrypt from "bcryptjs";
+import { requireRole } from "@/lib/auth-guard";
 
 export async function GET(req) {
+  const { session, denied } = await requireRole(req, "GET", "/api/users");
+  if (denied) return denied;
+
   try {
     await connectDB();
     const { searchParams } = new URL(req.url);
@@ -43,6 +47,9 @@ export async function GET(req) {
 }
 
 export async function POST(req) {
+  const { session, denied } = await requireRole(req, "POST", "/api/users");
+  if (denied) return denied;
+
   try {
     await connectDB();
     const body = await req.json();

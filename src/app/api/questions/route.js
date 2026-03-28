@@ -1,14 +1,18 @@
 import { NextResponse } from "next/server";
 import { revalidatePath } from "next/cache";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import connectDB from "@/lib/db";
 import Question from "@/models/Question";
+import Exam from "@/models/Exam";
+import Board from "@/models/Board";
 import Shift from "@/models/Shift";
 import Subject from "@/models/Subject";
 import Topic from "@/models/Topic";
+import { requireRole } from "@/lib/auth-guard";
 
 export async function GET(req) {
+  const { session, denied } = await requireRole(req, "GET", "/api/questions");
+  if (denied) return denied;
+
   try {
     await connectDB();
     const { searchParams } = new URL(req.url);
@@ -18,10 +22,30 @@ export async function GET(req) {
     const limit = parseInt(searchParams.get("limit")) || 10;
     const skip = (page - 1) * limit;
 
-    // 2. Build Dynamic Query
-    const query = { isActive: true };
+    // 2. Resolve valid exam IDs (PUBLISHED exams with ACTIVE boards only)
+    const examFilter = { status: "PUBLISHED" };
+    if (searchParams.get("boardId")) {
+      examFilter.board = searchParams.get("boardId");
+    }
+    const allExams = await Exam.find(examFilter)
+      .populate("board", "status")
+      .lean();
+    const validExamIds = allExams
+      .filter((e) => !e.board || e.board.status !== "INACTIVE")
+      .map((e) => e._id);
+
+    // 3. Build Dynamic Query
+    const query = { isActive: true, exam: { $in: validExamIds } };
     
-    if (searchParams.get("examId")) query.exam = searchParams.get("examId");
+    if (searchParams.get("examId")) {
+      // Only allow filtering by a valid (published + active board) exam
+      const requestedExamId = searchParams.get("examId");
+      const isValid = validExamIds.some((id) => id.toString() === requestedExamId);
+      if (isValid) {
+        query.exam = requestedExamId;
+      }
+      // If not valid, keep the $in constraint which will naturally exclude it
+    }
     if (searchParams.get("shiftId")) query.shift = searchParams.get("shiftId");
     if (searchParams.get("subjectId")) query.subject = searchParams.get("subjectId");
     if (searchParams.get("topicId")) query.topic = searchParams.get("topicId");
@@ -35,15 +59,14 @@ export async function GET(req) {
       query.$or = [
         { code: { $regex: search, $options: "i" } },
         { "content.en.text": { $regex: search, $options: "i" } },
-        { "content.hi.text": { $regex: search, $options: "i" } } // Added Hindi search support
+        { "content.hi.text": { $regex: search, $options: "i" } }
       ];
     }
 
-    // 3. Execute Query with Pagination
-    // We run countDocuments and find in parallel for better performance
+    // 4. Execute Query with Pagination
     const [questions, total] = await Promise.all([
       Question.find(query)
-        .populate("exam", "examName")
+        .populate("exam", "examName examYear status")
         .populate("shift", "shiftLabel")
         .populate("subject", "subjectName")
         .populate("topic", "topicName")
@@ -55,7 +78,7 @@ export async function GET(req) {
       Question.countDocuments(query)
     ]);
 
-    // 4. Return Data with Pagination Metadata
+    // 5. Return Data with Pagination Metadata
     return NextResponse.json({ 
       questions,
       pagination: {
@@ -74,12 +97,10 @@ export async function GET(req) {
 
 // POST remains mostly the same, ensure createdBy mapping is solid
 export async function POST(req) {
-  try {
-    const session = await getServerSession(authOptions);
-    if (!session) {
-      return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
-    }
+  const { session, denied } = await requireRole(req, "POST", "/api/questions");
+  if (denied) return denied;
 
+  try {
     const body = await req.json();
     await connectDB();
 

@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Save, ArrowLeft, Languages, CheckCircle2, X, Tag as TagIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -35,6 +35,10 @@ const MathJaxScript = dynamic(
 
 export default function CreateQuestionPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const preExamId = searchParams.get("examId") || "";
+  const preShiftId = searchParams.get("shiftId") || "";
+
   const [loading, setLoading] = useState(false);
   const [tagInput, setTagInput] = useState("");
   
@@ -60,8 +64,8 @@ export default function CreateQuestionPage() {
 
   const [formData, setFormData] = useState({
     code: "",
-    exam: "",
-    shift: "",
+    exam: preExamId,
+    shift: preShiftId,
     subject: "",
     topic: "",
     difficulty: "MEDIUM",
@@ -72,7 +76,7 @@ export default function CreateQuestionPage() {
     }, {}),
   });
 
-  // 2. Initial Fetch (Exams & Subjects)
+  // 2. Initial Fetch (Exams & Subjects) + pre-populate shifts if examId in URL
   useEffect(() => {
     const fetchInitial = async () => {
       try {
@@ -84,12 +88,19 @@ export default function CreateQuestionPage() {
         const subData = await subRes.json();
         setExams(exData.exams || []);
         setSubjects(subData.subjects || []);
+
+        // If exam was pre-selected via URL, auto-fetch its shifts
+        if (preExamId) {
+          const shiftRes = await fetch(`/api/exams/${preExamId}/shifts`);
+          const shiftData = await shiftRes.json();
+          setShifts(shiftData.shifts || []);
+        }
       } catch (err) {
         console.error("Fetch error:", err);
       }
     };
     fetchInitial();
-  }, []);
+  }, [preExamId]);
 
   // 3. Hierarchy Handlers (Removing useEffect dependency)
   const handleRootChange = async (e) => {
@@ -194,7 +205,12 @@ export default function CreateQuestionPage() {
       });
 
       if (res.ok) {
-        router.push("/dashboard/questions");
+        // If came from exam questions page, go back there
+        if (preExamId) {
+          router.push(`/dashboard/exams/${preExamId}/questions`);
+        } else {
+          router.push("/dashboard/questions");
+        }
         router.refresh();
       } else {
         const error = await res.json();
@@ -264,7 +280,7 @@ export default function CreateQuestionPage() {
                 <option value="">Select Shift</option>
                 {shifts.map((sh) => (
                   <option key={sh._id} value={sh._id}>
-                    {sh.shiftName}
+                    {sh.shiftLabel}
                   </option>
                 ))}
               </select>

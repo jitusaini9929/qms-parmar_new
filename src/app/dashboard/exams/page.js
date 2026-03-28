@@ -75,6 +75,7 @@ export default function ExamsPage() {
   const shiftsByExam = useMemo(() => {
     const map = {};
     shifts.forEach((shift) => {
+      if (!shift.exam) return; // skip shifts with no exam reference
       const examId = typeof shift.exam === "object" ? shift.exam._id : shift.exam;
       if (!map[examId]) map[examId] = [];
       map[examId].push(shift);
@@ -230,7 +231,9 @@ export default function ExamsPage() {
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end" className="w-48 shadow-xl">
                               <DropdownMenuLabel>Extra Actions</DropdownMenuLabel>
-                              <DropdownMenuItem>Manage Questions</DropdownMenuItem>
+                              <Link href={`/dashboard/exams/${exam._id}/questions`}>
+                                <DropdownMenuItem className="cursor-pointer">Manage Questions</DropdownMenuItem>
+                              </Link>
                               <DropdownMenuItem>View Stats</DropdownMenuItem>
                             </DropdownMenuContent>
                           </DropdownMenu>

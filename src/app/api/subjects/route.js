@@ -2,12 +2,14 @@ import { NextResponse } from "next/server";
 import { revalidatePath } from "next/cache";
 import connectDB from "@/lib/db";
 import Subject from "@/models/Subject";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/app/api/auth/[...nextauth]/route";
+import { requireRole } from "@/lib/auth-guard";
 
 export const revalidate = 60; // 1-minute cache
 
 export async function GET(req) {
+  const { session, denied } = await requireRole(req, "GET", "/api/subjects");
+  if (denied) return denied;
+
   await connectDB();
   const { searchParams } = new URL(req.url);
   const query = {};
@@ -19,10 +21,10 @@ export async function GET(req) {
 }
 
 export async function POST(req) {
-  try {
-    const session = await getServerSession(authOptions);
-    if (!session) return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
+  const { session, denied } = await requireRole(req, "POST", "/api/subjects");
+  if (denied) return denied;
 
+  try {
     const body = await req.json();
     await connectDB();
 

@@ -42,11 +42,11 @@ export default function ImportQuestionsPage() {
   const [importing, setImporting] = useState(false);
   const [isFinalJson, setIsFinalJson] = useState(false);
 
-  // Hierarchy States (for legacy format)
-  const [exams, setExams] = useState([]);
+  // Hierarchy States
+  const [boards, setBoards] = useState([]);
   const [languagesInFile, setLanguagesInFile] = useState([]);
   const [config, setConfig] = useState({
-    exam: "",
+    board: "",
     createCollection: false,
     collectionTitle: "",
   });
@@ -60,9 +60,9 @@ export default function ImportQuestionsPage() {
   });
 
   useEffect(() => {
-    fetch("/api/exams?publishedOnly=true")
+    fetch("/api/boards?activeOnly=true")
       .then((res) => res.json())
-      .then((data) => setExams(data.exams || []));
+      .then((data) => setBoards(data.boards || []));
   }, []);
 
   const handleHierarchyChange = async (name, value) => {
@@ -174,11 +174,9 @@ export default function ImportQuestionsPage() {
     try {
       const payload = {
         questions: parsedData,
-        hierarchy: isFinalJson
-          ? {}
-          : {
-              exam: config.exam,
-            },
+        hierarchy: {
+          board: config.board,
+        },
         collection: config.createCollection
           ? { title: config.collectionTitle }
           : null,
@@ -401,68 +399,62 @@ export default function ImportQuestionsPage() {
         <div className="space-y-6">
           <Card>
             <CardContent className="pt-6 space-y-4">
-              {isFinalJson ? (
-                // --- Final JSON mode: no manual selection needed ---
-                <>
-                  <h3 className="text-sm font-bold uppercase tracking-widest text-muted-foreground">
-                    Auto-Detected from JSON
-                  </h3>
-                  <div className="rounded-lg bg-emerald-500/5 border border-emerald-500/20 p-4 space-y-2">
-                    <p className="text-xs font-semibold text-emerald-600 uppercase tracking-wider flex items-center gap-1.5">
-                      <CheckCircle2 className="h-3.5 w-3.5" /> All fields auto-resolved
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                      Exam, Shift (Morning/Evening), Subject, and Topic will be created
-                      or matched automatically based on the JSON data. No manual
-                      selection is needed.
-                    </p>
-                  </div>
-                  <ul className="text-xs text-muted-foreground space-y-1.5 pl-1">
-                    <li className="flex items-center gap-2">
-                      <Sun className="h-3 w-3 text-amber-400" />
-                      Shift set from <strong>Time</strong> field (before 12 PM = Morning)
-                    </li>
-                    <li className="flex items-center gap-2">
-                      <GraduationCap className="h-3 w-3 text-blue-400" />
-                      Exam set from <strong>Name</strong> field
-                    </li>
-                    <li className="flex items-center gap-2">
-                      <BookOpen className="h-3 w-3 text-purple-400" />
-                      Subject & Topic set per question
-                    </li>
-                  </ul>
-                </>
-              ) : (
-                // --- Legacy mode: manual hierarchy selection ---
-                <>
-                  <h3 className="text-sm font-bold uppercase tracking-widest text-muted-foreground">
-                    Default Hierarchy for Questions
-                  </h3>
+              {/* Board Select — shown for both final.json and legacy mode */}
+              <>
+                <h3 className="text-sm font-bold uppercase tracking-widest text-muted-foreground">
+                  {isFinalJson ? "Select Board for Import" : "Default Hierarchy for Questions"}
+                </h3>
 
-                  {/* Exam Select */}
-                  <div className="space-y-1.5">
-                    <Label>Exam</Label>
-                    <Select
-                      value={config.exam}
-                      onValueChange={(val) =>
-                        handleHierarchyChange("exam", val)
-                      }
-                    >
-                      <SelectTrigger className="w-full bg-background border-input">
-                        <SelectValue placeholder="Select Exam" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="none">Select Exam</SelectItem>
-                        {exams.map((ex) => (
-                          <SelectItem key={ex._id} value={ex._id}>
-                            {ex.examName}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </>
-              )}
+                <div className="space-y-1.5">
+                  <Label>Board</Label>
+                  <Select
+                    value={config.board}
+                    onValueChange={(val) =>
+                      handleHierarchyChange("board", val)
+                    }
+                  >
+                    <SelectTrigger className="w-full bg-background border-input">
+                      <SelectValue placeholder="Select Board" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">Select Board</SelectItem>
+                      {boards.map((b) => (
+                        <SelectItem key={b._id} value={b._id}>
+                          {b.boardShortName} - {b.boardName}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {isFinalJson && (
+                  <>
+                    <div className="rounded-lg bg-emerald-500/5 border border-emerald-500/20 p-4 space-y-2">
+                      <p className="text-xs font-semibold text-emerald-600 uppercase tracking-wider flex items-center gap-1.5">
+                        <CheckCircle2 className="h-3.5 w-3.5" /> Other fields auto-resolved
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        Exam, Shift, Subject, and Topic will be created or matched
+                        automatically from the JSON data. Board must be selected manually.
+                      </p>
+                    </div>
+                    <ul className="text-xs text-muted-foreground space-y-1.5 pl-1">
+                      <li className="flex items-center gap-2">
+                        <Sun className="h-3 w-3 text-amber-400" />
+                        Shift set from <strong>Time</strong> field
+                      </li>
+                      <li className="flex items-center gap-2">
+                        <GraduationCap className="h-3 w-3 text-blue-400" />
+                        Exam set from <strong>Name</strong> field
+                      </li>
+                      <li className="flex items-center gap-2">
+                        <BookOpen className="h-3 w-3 text-purple-400" />
+                        Subject & Topic set per question
+                      </li>
+                    </ul>
+                  </>
+                )}
+              </>
 
               <div className="pt-4 border-t space-y-4">
                 <div className="flex items-center space-x-2">

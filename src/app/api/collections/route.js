@@ -4,10 +4,15 @@ import connectDB from "@/lib/db";
 import Collection from "@/models/Collection";
 import Exam from "@/models/Exam";
 import Subject from "@/models/Subject";
+import { requireRole } from "@/lib/auth-guard";
+
 /**
  * GET: Fetch collections with advanced multi-parameter filtering
  */
 export async function GET(req) {
+  const { session, denied } = await requireRole(req, "GET", "/api/collections");
+  if (denied) return denied;
+
   try {
     await connectDB();
     const { searchParams } = new URL(req.url);
@@ -71,6 +76,9 @@ export async function GET(req) {
  * POST: Create a new Collection with Hierarchy Validation
  */
 export async function POST(req) {
+  const { session, denied } = await requireRole(req, "POST", "/api/collections");
+  if (denied) return denied;
+
   try {
     await connectDB();
     const body = await req.json();

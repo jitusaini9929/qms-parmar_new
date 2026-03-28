@@ -270,7 +270,12 @@ export default function WriterPage() {
                 <option value="">
                   {permLoading ? "Loading..." : "— Choose a board —"}
                 </option>
-                {permissions.map((perm) => {
+                {permissions
+                  .filter((perm) => {
+                    const board = perm.board;
+                    return typeof board === "object" ? board.status === "ACTIVE" : true;
+                  })
+                  .map((perm) => {
                   const board = perm.board;
                   const boardId = typeof board === "object" ? board._id : board;
                   const boardName =

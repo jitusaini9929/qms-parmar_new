@@ -19,7 +19,7 @@ export async function GET(req) {
     const writerId = searchParams.get("writerId") || session.user.id;
 
     const permissions = await WriterPermission.find({ writer: writerId })
-      .populate("board", "boardName boardShortName")
+      .populate("board", "boardName boardShortName status")
       .populate("exams", "examName examYear")
       .lean();
 
@@ -71,7 +71,7 @@ export async function PUT(req) {
 
     // Fetch updated permissions to return
     const updated = await WriterPermission.find({ writer: writerId })
-      .populate("board", "boardName boardShortName")
+      .populate("board", "boardName boardShortName status")
       .populate("exams", "examName examYear")
       .lean();
 

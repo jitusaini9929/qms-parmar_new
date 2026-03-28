@@ -5,11 +5,15 @@ import Collection from "@/models/Collection";
 import Question from "@/models/Question";
 import Exam from "@/models/Exam";
 import Subject from "@/models/Subject";
+import { requireRole } from "@/lib/auth-guard";
 
 /**
  * GET: Fetch a single collection with populated question details
  */
 export async function GET(req, { params }) {
+  const { session, denied } = await requireRole(req, "GET", "/api/collections");
+  if (denied) return denied;
+
   try {
     const { id } = await params;
     if (!mongoose.Types.ObjectId.isValid(id)) {
@@ -40,6 +44,9 @@ export async function GET(req, { params }) {
  * PUT: Update Collection Metadata or Question List
  */
 export async function PUT(req, { params }) {
+  const { session, denied } = await requireRole(req, "PUT", "/api/collections");
+  if (denied) return denied;
+
   try {
     const { id } = await params;
     const body = await req.json();
@@ -83,6 +90,9 @@ export async function PUT(req, { params }) {
  * DELETE: Remove a collection
  */
 export async function DELETE(req, { params }) {
+  const { session, denied } = await requireRole(req, "DELETE", "/api/collections");
+  if (denied) return denied;
+
   try {
     const { id } = await params;
     if (!mongoose.Types.ObjectId.isValid(id)) {

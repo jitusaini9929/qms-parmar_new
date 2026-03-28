@@ -1,6 +1,4 @@
 import { NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import connectDB from "@/lib/db";
 import Question from "@/models/Question";
 import Exam from "@/models/Exam";
@@ -8,11 +6,15 @@ import Shift from "@/models/Shift";
 import Subject from "@/models/Subject";
 import Topic from "@/models/Topic";
 import User from "@/models/User";
+import { requireRole } from "@/lib/auth-guard";
 
 /**
  * GET: Fetch a single question with all language blocks
  */
 export async function GET(req, { params }) {
+  const { session, denied } = await requireRole(req, "GET", "/api/questions");
+  if (denied) return denied;
+
   try {
     const { id } = await params;
     await connectDB();
@@ -41,12 +43,10 @@ export async function GET(req, { params }) {
  * Triggers pre-save hooks for hierarchy and language validation
  */
 export async function PUT(req, { params }) {
-  try {
-    const session = await getServerSession(authOptions);
-    if (!session) {
-      return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
-    }
+  const { session, denied } = await requireRole(req, "PUT", "/api/questions");
+  if (denied) return denied;
 
+  try {
     const { id } = await params;
     const body = await req.json();
     await connectDB();
@@ -80,10 +80,10 @@ export async function PUT(req, { params }) {
  * (Standard for audit trails)
  */
 export async function DELETE(req, { params }) {
-  try {
-    const session = await getServerSession(authOptions);
-    if (!session) return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
+  const { session, denied } = await requireRole(req, "DELETE", "/api/questions");
+  if (denied) return denied;
 
+  try {
     const { id } = await params;
     await connectDB();
 

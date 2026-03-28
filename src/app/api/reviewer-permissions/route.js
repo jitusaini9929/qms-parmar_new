@@ -19,7 +19,7 @@ export async function GET(req) {
     const reviewerId = searchParams.get("reviewerId") || session.user.id;
 
     const permissions = await ReviewerPermission.find({ reviewer: reviewerId })
-      .populate("board", "boardName boardShortName")
+      .populate("board", "boardName boardShortName status")
       .populate("exams", "examName examYear")
       .lean();
 
@@ -71,7 +71,7 @@ export async function PUT(req) {
 
     // Fetch updated permissions to return
     const updated = await ReviewerPermission.find({ reviewer: reviewerId })
-      .populate("board", "boardName boardShortName")
+      .populate("board", "boardName boardShortName status")
       .populate("exams", "examName examYear")
       .lean();
 

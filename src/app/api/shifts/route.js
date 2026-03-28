@@ -2,14 +2,16 @@ import { NextResponse } from "next/server";
 import connectDB from "@/lib/db";
 import Shift from "@/models/Shift";
 import Exam from "@/models/Exam";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import { revalidatePath } from "next/cache";
 import mongoose from "mongoose";
+import { requireRole } from "@/lib/auth-guard";
 
 export const revalidate = 60;
 
 export async function GET(req) {
+  const { session, denied } = await requireRole(req, "GET", "/api/shifts");
+  if (denied) return denied;
+
   try {
     await connectDB();
     const { searchParams } = new URL(req.url);
@@ -49,10 +51,10 @@ export async function GET(req) {
 }
 
 export async function POST(req) {
+  const { session, denied } = await requireRole(req, "POST", "/api/shifts");
+  if (denied) return denied;
+
   try {
-    const session = await getServerSession(authOptions);
-    if (!session)
-      return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
     const body = await req.json();
     await connectDB();
     const newShift = await Shift.create({

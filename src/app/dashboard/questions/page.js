@@ -21,7 +21,9 @@ export default function QuestionsPage() {
   const [questions, setQuestions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
+  const [boards, setBoards] = useState([]);
   const [exams, setExams] = useState([]);
+  const [allExams, setAllExams] = useState([]);
   const [subjects, setSubjects] = useState([]);
   const [shifts, setShifts] = useState([]);
   
@@ -34,15 +36,21 @@ export default function QuestionsPage() {
   });
 
   const [filters, setFilters] = useState({
+    boardId: "",
     examId: "",
     shiftId: "",
     subjectId: "",
     lang: "",
   });
 
-  // Fetch exams and subjects for filter dropdowns
+  // Fetch boards, exams and subjects for filter dropdowns
   useEffect(() => {
-    fetch("/api/exams?publishedOnly=true").then(r => r.json()).then(d => setExams(d.exams || []));
+    fetch("/api/boards?activeOnly=true").then(r => r.json()).then(d => setBoards(d.boards || []));
+    fetch("/api/exams?publishedOnly=true").then(r => r.json()).then(d => {
+      const list = d.exams || [];
+      setAllExams(list);
+      setExams(list);
+    });
     fetch("/api/subjects?activeOnly=true").then(r => r.json()).then(d => setSubjects(d.subjects || []));
   }, []);
 
@@ -87,6 +95,15 @@ export default function QuestionsPage() {
   const handleFilterChange = async (key, value) => {
     setFilters(prev => ({ ...prev, [key]: value }));
     setPagination(prev => ({ ...prev, page: 1 }));
+
+    // When board changes, filter exams and reset exam + shift
+    if (key === "boardId") {
+      setShifts([]);
+      const filtered = value ? allExams.filter(ex => (ex.board?._id || ex.board) === value) : allExams;
+      setExams(filtered);
+      setFilters(prev => ({ ...prev, boardId: value, examId: "", shiftId: "" }));
+      return;
+    }
 
     // When exam changes, fetch shifts for that exam and reset shiftId
     if (key === "examId") {
@@ -135,7 +152,7 @@ export default function QuestionsPage() {
       </div>
 
       {/* Filters Bar */}
-      <div className="grid grid-cols-1 md:grid-cols-5 gap-4 bg-card p-4 rounded-xl border shadow-sm">
+      <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-4 bg-card p-4 rounded-xl border shadow-sm">
         <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
@@ -148,14 +165,12 @@ export default function QuestionsPage() {
 
         <select
           className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-          value={filters.lang}
-          onChange={(e) => handleFilterChange("lang", e.target.value)}
+          value={filters.boardId}
+          onChange={(e) => handleFilterChange("boardId", e.target.value)}
         >
-          <option value="">All Languages</option>
-          {LANGUAGE_OPTIONS.map((lang) => (
-            <option key={lang.code} value={lang.code}>
-              {lang.label}
-            </option>
+          <option value="">All Boards</option>
+          {boards.map((b) => (
+            <option key={b._id} value={b._id}>{b.boardShortName}</option>
           ))}
         </select>
 
@@ -190,6 +205,19 @@ export default function QuestionsPage() {
           <option value="">All Subjects</option>
           {subjects.map((s) => (
             <option key={s._id} value={s._id}>{s.subjectName}</option>
+          ))}
+        </select>
+
+        <select
+          className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+          value={filters.lang}
+          onChange={(e) => handleFilterChange("lang", e.target.value)}
+        >
+          <option value="">All Languages</option>
+          {LANGUAGE_OPTIONS.map((lang) => (
+            <option key={lang.code} value={lang.code}>
+              {lang.label}
+            </option>
           ))}
         </select>
       </div>
