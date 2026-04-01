@@ -15,6 +15,7 @@ export default function CollectionSummaryPage({ params: paramsPromise }) {
   }, [params.id]);
 
   if (!data) return <div className="p-10 text-center">Loading...</div>;
+  console.log("API DATA =>", data);
 
   return (
     <div className="w-full mx-auto space-y-6">

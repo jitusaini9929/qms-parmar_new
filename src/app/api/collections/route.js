@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import mongoose from "mongoose";
 import connectDB from "@/lib/db";
 import Collection from "@/models/Collection";
+import Question from "@/models/Question";
 import Exam from "@/models/Exam";
 import Subject from "@/models/Subject";
 import { requireRole } from "@/lib/auth-guard";
@@ -60,9 +61,27 @@ export async function GET(req) {
       Collection.countDocuments(query),
     ]);
 
+    const collectionsWithQuestionCount = await Promise.all(
+      collections.map(async (col) => {
+        const questionIds = (col.questions || []).filter((qid) =>
+          mongoose.Types.ObjectId.isValid(qid)
+        );
+        const questionCount = questionIds.length
+          ? await Question.countDocuments({ _id: { $in: questionIds } })
+          : 0;
+
+        return {
+          ...col,
+          questionRefCount: questionIds.length,
+          questionCount,
+          missingQuestionCount: Math.max(questionIds.length - questionCount, 0),
+        };
+      })
+    );
+
     return NextResponse.json(
       {
-        collections,
+        collections: collectionsWithQuestionCount,
         pagination: { total, page, limit, pages: Math.ceil(total / limit) },
       },
       { status: 200 }

@@ -211,9 +211,14 @@ export default function CollectionsPage() {
                     <div className="flex items-center gap-2">
                       <FileText className="h-3 w-3 text-muted-foreground" />
                       <span className="text-sm font-semibold">
-                        {col.questions?.length || 0}
+                        {(col.questionCount ?? col.questions?.length) || 0}
                       </span>
                     </div>
+                    {col.missingQuestionCount > 0 && (
+                      <p className="text-[10px] text-amber-600 mt-0.5">
+                        {col.missingQuestionCount} missing link{col.missingQuestionCount > 1 ? "s" : ""}
+                      </p>
+                    )}
                   </TableCell>
                   <TableCell>
                     <div className="flex flex-col gap-1">

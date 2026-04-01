@@ -10,6 +10,8 @@ import Exam from "@/models/Exam";
 import Board from "@/models/Board";
 import { requireRole } from "@/lib/auth-guard";
 import slugify from "slugify";
+import crypto from "crypto";
+import { processContentImages } from "@/lib/s3";
 
 /* -------------------------------------------------
    Utils + Canonical Cache
@@ -414,6 +416,17 @@ export async function POST(req) {
           createdBy: userId,
           isActive: true,
         });
+      }
+    }
+
+    /* ---------- Process images in content → upload to S3 ---------- */
+    for (let i = 0; i < docs.length; i++) {
+      if (docs[i].content && typeof docs[i].content === "object") {
+        const uniqueQId = docs[i].code || crypto.randomUUID();
+        docs[i].content = await processContentImages(
+          docs[i].content,
+          uniqueQId
+        );
       }
     }
 

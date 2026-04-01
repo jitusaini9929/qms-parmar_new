@@ -116,6 +116,7 @@ export default function EditQuestionPage({ params: paramsPromise }) {
           shift: shiftId,
           subject: subjectId,
           topic: topicId,
+          tags: qData.tags || [],
           content: { ...emptyBlocks, ...qData.content },
         });
       } catch (err) {

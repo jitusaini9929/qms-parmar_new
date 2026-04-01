@@ -4,7 +4,8 @@ import React, { useState, useEffect, use } from "react";
 import { useRouter } from "next/navigation";
 import { 
   Search, ArrowLeft, Save, Filter, 
-  CheckCircle2, Plus, X, Loader2, ChevronRight 
+  CheckCircle2, Plus, X, Loader2, ChevronRight,
+  ChevronLeft, ChevronsLeft, ChevronsRight
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -19,6 +20,7 @@ export default function AddQuestionsPage({ params: paramsPromise }) {
   const [bank, setBank] = useState([]);
   const [searching, setSearching] = useState(false);
   const [hasSearched, setHasSearched] = useState(false);
+  const [pagination, setPagination] = useState({ total: 0, page: 1, pages: 1, limit: 50 });
 
   // State for the Collection (Selected Items)
   const [selectedIds, setSelectedIds] = useState([]);
@@ -32,7 +34,6 @@ export default function AddQuestionsPage({ params: paramsPromise }) {
     subject: "",
     topic: "",
     tags: "",
-    page: 1
   });
 
   // 1. Initial Load: Fetch Collection & Base Lists
@@ -63,15 +64,28 @@ export default function AddQuestionsPage({ params: paramsPromise }) {
     }
   };
 
-  // 3. Search Handler
-  const getQuestions = async () => {
+  // 3. Search Handler — builds proper API params
+  const getQuestions = async (page = 1) => {
     setSearching(true);
     setHasSearched(true);
     try {
-      const query = new URLSearchParams(filters).toString();
-      const res = await fetch(`/api/questions?${query}`);
+      // Build query params with correct API parameter names
+      const queryParams = new URLSearchParams();
+      
+      if (filters.search) queryParams.set("search", filters.search);
+      if (filters.subject) queryParams.set("subjectId", filters.subject);
+      if (filters.topic) queryParams.set("topicId", filters.topic);
+      if (filters.tags) queryParams.set("tags", filters.tags);
+      
+      queryParams.set("page", page.toString());
+      queryParams.set("limit", "50");
+
+      const res = await fetch(`/api/questions?${queryParams.toString()}`);
       const data = await res.json();
       setBank(data.questions || []);
+      if (data.pagination) {
+        setPagination(data.pagination);
+      }
     } catch (error) {
       console.error(error);
     } finally {
@@ -79,11 +93,28 @@ export default function AddQuestionsPage({ params: paramsPromise }) {
     }
   };
 
+  // Page change handler
+  const goToPage = (page) => {
+    if (page < 1 || page > pagination.pages) return;
+    getQuestions(page);
+  };
+
   // 4. Selection Logic
   const toggleSelect = (id) => {
     setSelectedIds(prev => 
       prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]
     );
+  };
+
+  // Select/Deselect all visible results
+  const toggleSelectAll = () => {
+    const allVisibleIds = bank.map(q => q._id);
+    const allSelected = allVisibleIds.every(id => selectedIds.includes(id));
+    if (allSelected) {
+      setSelectedIds(prev => prev.filter(id => !allVisibleIds.includes(id)));
+    } else {
+      setSelectedIds(prev => [...new Set([...prev, ...allVisibleIds])]);
+    }
   };
 
   const handleSaveCollection = async () => {
@@ -170,7 +201,7 @@ export default function AddQuestionsPage({ params: paramsPromise }) {
             />
           </div>
         </div>
-        <Button onClick={getQuestions} className="w-full gap-2" variant="secondary" disabled={searching}>
+        <Button onClick={() => getQuestions(1)} className="w-full gap-2" variant="secondary" disabled={searching}>
           {searching ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
           Get Questions
         </Button>
@@ -182,8 +213,14 @@ export default function AddQuestionsPage({ params: paramsPromise }) {
         <div className="space-y-4 animate-in fade-in slide-in-from-top-4">
           <div className="flex items-center justify-between">
             <h2 className="text-sm font-bold uppercase text-muted-foreground tracking-tighter">
-              Search Results ({bank.length})
+              Search Results ({pagination.total} total{pagination.pages > 1 ? `, page ${pagination.page} of ${pagination.pages}` : ""})
             </h2>
+            {bank.length > 0 && (
+              <Button variant="outline" size="sm" className="text-xs gap-1" onClick={toggleSelectAll}>
+                <CheckCircle2 className="h-3 w-3" />
+                {bank.every(q => selectedIds.includes(q._id)) ? "Deselect Page" : "Select Page"}
+              </Button>
+            )}
           </div>
           
           {bank.length === 0 ? (
@@ -191,35 +228,84 @@ export default function AddQuestionsPage({ params: paramsPromise }) {
               No questions found matching your criteria.
             </div>
           ) : (
-            <div className="grid grid-cols-1 gap-3">
-              {bank.map((q) => (
-                <div 
-                  key={q._id}
-                  onClick={() => toggleSelect(q._id)}
-                  className={`flex items-center justify-between p-4 rounded-xl border transition-all cursor-pointer ${
-                    selectedIds.includes(q._id) 
-                    ? "bg-primary/5 border-primary ring-1 ring-primary" 
-                    : "bg-card hover:border-primary/50"
-                  }`}
-                >
-                  <div className="flex gap-4 items-center overflow-hidden">
-                    <div className={`h-6 w-6 rounded-full border flex items-center justify-center shrink-0 ${
-                      selectedIds.includes(q._id) ? "bg-primary border-primary" : "bg-background"
-                    }`}>
-                      {selectedIds.includes(q._id) && <CheckCircle2 className="h-4 w-4 text-white" />}
-                    </div>
-                    <div>
-                      <div className="flex gap-2 items-center mb-1">
-                        <Badge variant="outline" className="text-[9px] h-4 uppercase font-bold">{q.code}</Badge>
-                        <span className="text-[10px] text-muted-foreground uppercase">{q.difficulty}</span>
+            <>
+              <div className="grid grid-cols-1 gap-3">
+                {bank.map((q) => (
+                  <div 
+                    key={q._id}
+                    onClick={() => toggleSelect(q._id)}
+                    className={`flex items-center justify-between p-4 rounded-xl border transition-all cursor-pointer ${
+                      selectedIds.includes(q._id) 
+                      ? "bg-primary/5 border-primary ring-1 ring-primary" 
+                      : "bg-card hover:border-primary/50"
+                    }`}
+                  >
+                    <div className="flex gap-4 items-center overflow-hidden">
+                      <div className={`h-6 w-6 rounded-full border flex items-center justify-center shrink-0 ${
+                        selectedIds.includes(q._id) ? "bg-primary border-primary" : "bg-background"
+                      }`}>
+                        {selectedIds.includes(q._id) && <CheckCircle2 className="h-4 w-4 text-white" />}
                       </div>
-                      <p className="text-sm font-medium line-clamp-1">{q.content?.en?.text || q.content?.hi?.text}</p>
+                      <div>
+                        <div className="flex gap-2 items-center mb-1">
+                          <Badge variant="outline" className="text-[9px] h-4 uppercase font-bold">{q.code}</Badge>
+                          <span className="text-[10px] text-muted-foreground uppercase">{q.difficulty}</span>
+                          {q.tags?.length > 0 && (
+                            <div className="flex gap-1">
+                              {q.tags.slice(0, 3).map((tag, i) => (
+                                <Badge key={i} variant="secondary" className="text-[8px] h-3.5 px-1">{tag}</Badge>
+                              ))}
+                              {q.tags.length > 3 && (
+                                <span className="text-[8px] text-muted-foreground">+{q.tags.length - 3}</span>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                        <p className="text-sm font-medium line-clamp-1">{q.content?.en?.text || q.content?.hi?.text}</p>
+                      </div>
                     </div>
+                    <ChevronRight className="h-4 w-4 text-muted-foreground" />
                   </div>
-                  <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                ))}
+              </div>
+
+              {/* Pagination Controls */}
+              {pagination.pages > 1 && (
+                <div className="flex items-center justify-center gap-2 pt-4 border-t">
+                  <Button 
+                    variant="outline" size="icon" className="h-8 w-8"
+                    disabled={pagination.page <= 1 || searching}
+                    onClick={() => goToPage(1)}
+                  >
+                    <ChevronsLeft className="h-4 w-4" />
+                  </Button>
+                  <Button 
+                    variant="outline" size="icon" className="h-8 w-8"
+                    disabled={pagination.page <= 1 || searching}
+                    onClick={() => goToPage(pagination.page - 1)}
+                  >
+                    <ChevronLeft className="h-4 w-4" />
+                  </Button>
+                  <span className="text-sm font-medium px-3">
+                    Page {pagination.page} of {pagination.pages}
+                  </span>
+                  <Button 
+                    variant="outline" size="icon" className="h-8 w-8"
+                    disabled={pagination.page >= pagination.pages || searching}
+                    onClick={() => goToPage(pagination.page + 1)}
+                  >
+                    <ChevronRight className="h-4 w-4" />
+                  </Button>
+                  <Button 
+                    variant="outline" size="icon" className="h-8 w-8"
+                    disabled={pagination.page >= pagination.pages || searching}
+                    onClick={() => goToPage(pagination.pages)}
+                  >
+                    <ChevronsRight className="h-4 w-4" />
+                  </Button>
                 </div>
-              ))}
-            </div>
+              )}
+            </>
           )}
         </div>
       )}

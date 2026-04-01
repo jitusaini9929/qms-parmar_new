@@ -24,17 +24,39 @@ export async function GET(req, { params }) {
     const collection = await Collection.findById(id)
       .populate("exam", "examName")
       .populate("subject", "subjectName")
-      .populate({
-        path: "questions",
-        select: "code content difficulty tags", // Only fetch what's needed for summary
-      })
       .lean();
 
     if (!collection) {
       return NextResponse.json({ message: "Collection not found" }, { status: 404 });
     }
 
-    return NextResponse.json(collection, { status: 200 });
+    const questionIds = (collection.questions || [])
+      .map((qid) => (typeof qid === "string" ? qid : qid?.toString?.()))
+      .filter((qid) => qid && mongoose.Types.ObjectId.isValid(qid));
+
+    const questions = questionIds.length
+      ? await Question.find({ _id: { $in: questionIds } })
+          .select("code content difficulty tags")
+          .lean()
+      : [];
+
+    const questionsById = new Map(
+      questions.map((q) => [q._id.toString(), q])
+    );
+    const orderedQuestions = questionIds
+      .map((qid) => questionsById.get(qid))
+      .filter(Boolean);
+
+    return NextResponse.json(
+      {
+        ...collection,
+        questions: orderedQuestions,
+        questionRefCount: questionIds.length,
+        loadedQuestionCount: orderedQuestions.length,
+        missingQuestionCount: Math.max(questionIds.length - orderedQuestions.length, 0),
+      },
+      { status: 200 }
+    );
   } catch (error) {
     return NextResponse.json({ message: error.message }, { status: 500 });
   }

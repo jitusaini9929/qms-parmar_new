@@ -23,7 +23,7 @@ export async function GET() {
       const permissions = await ReviewerPermission.find({ reviewer: session.user.id }).lean();
       const totalBoards = permissions.length;
       const totalExams = permissions.reduce((acc, p) => acc + (p.exams ? p.exams.length : 0), 0);
-      
+
       return NextResponse.json({
         role: "REVIEWER",
         totalBoards,
@@ -35,7 +35,7 @@ export async function GET() {
       const permissions = await WriterPermission.find({ writer: session.user.id }).lean();
       const totalBoards = permissions.length;
       const totalExams = permissions.reduce((acc, p) => acc + (p.exams ? p.exams.length : 0), 0);
-      
+
       return NextResponse.json({
         role: "CONTENT_WRITER",
         totalBoards,

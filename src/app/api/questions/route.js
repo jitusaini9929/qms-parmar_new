@@ -63,6 +63,15 @@ export async function GET(req) {
       ];
     }
 
+    // Tags filter: comma-separated, match all
+    const tags = searchParams.get("tags");
+    if (tags) {
+      const tagList = tags.split(",").map(t => t.trim()).filter(Boolean);
+      if (tagList.length > 0) {
+        query.tags = { $all: tagList };
+      }
+    }
+
     // 4. Execute Query with Pagination
     const [questions, total] = await Promise.all([
       Question.find(query)
