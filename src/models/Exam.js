@@ -1,4 +1,5 @@
 import mongoose from "mongoose";
+import slugify from "slugify";
 
 const ExamSchema = new mongoose.Schema(
   {
@@ -36,7 +37,7 @@ ExamSchema.pre("validate", function (next) {
     });
   }
 
-  //next();
+  next();
 });
 
 export default mongoose.models.Exam || mongoose.model("Exam", ExamSchema);

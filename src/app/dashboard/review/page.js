@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useCallback } from "react";
+import dynamic from "next/dynamic";
 import {
   ClipboardCheck,
   ChevronLeft,
@@ -23,6 +24,12 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { LANGUAGE_OPTIONS, LANGUAGES } from "@/enums/language";
 import { toast } from "sonner";
+import CKEditorReadOnly from "@/components/CKEditorReadOnly";
+
+const MathJaxScript = dynamic(
+  () => import("@/components/MathJaxScript").then((mod) => mod.default),
+  { ssr: false }
+);
 
 export default function ReviewPage() {
   // Filter state
@@ -158,6 +165,7 @@ export default function ReviewPage() {
 
   return (
     <div className="space-y-6 max-w-[1400px] mx-auto animate-in fade-in duration-500">
+      <MathJaxScript />
       {/* Header */}
       <div>
         <h1 className="text-3xl font-bold tracking-tight flex items-center gap-2">
@@ -349,9 +357,7 @@ export default function ReviewPage() {
                           <h4 className="text-xs font-bold uppercase text-primary mb-2">
                             Passage / Context
                           </h4>
-                          <p className="text-sm leading-relaxed whitespace-pre-wrap">
-                            {question.content[langCode].passage}
-                          </p>
+                          <CKEditorReadOnly content={question.content[langCode].passage} className="text-sm leading-relaxed" />
                         </div>
                       )}
 
@@ -360,9 +366,7 @@ export default function ReviewPage() {
                         <h4 className="text-xs font-bold uppercase text-muted-foreground">
                           Question
                         </h4>
-                        <p className="text-xl font-medium leading-snug">
-                          {question.content[langCode]?.text}
-                        </p>
+                        <CKEditorReadOnly content={question.content[langCode]?.text} className="text-xl font-medium leading-snug" />
                       </div>
 
                       {/* Options */}
@@ -388,7 +392,7 @@ export default function ReviewPage() {
                             >
                               {String.fromCharCode(65 + idx)}
                             </div>
-                            <p className="text-sm font-medium">{opt.text}</p>
+                            <CKEditorReadOnly content={opt.text} className="text-sm font-medium" />
                           </div>
                         ))}
                       </div>
@@ -402,8 +406,8 @@ export default function ReviewPage() {
                               <h4 className="text-xs font-bold uppercase text-emerald-600">
                                 Step-by-step Solution
                               </h4>
-                              <div className="p-4 bg-emerald-50/50 dark:bg-emerald-950/20 rounded-lg text-sm border border-emerald-100 dark:border-emerald-900/30 whitespace-pre-wrap">
-                                {question.content[langCode].solution}
+                              <div className="p-4 bg-emerald-50/50 dark:bg-emerald-950/20 rounded-lg text-sm border border-emerald-100 dark:border-emerald-900/30">
+                                <CKEditorReadOnly content={question.content[langCode].solution} />
                               </div>
                             </div>
                           )}
@@ -412,9 +416,7 @@ export default function ReviewPage() {
                               <h4 className="text-xs font-bold uppercase text-blue-600">
                                 Additional Information
                               </h4>
-                              <p className="text-sm text-muted-foreground italic">
-                                {question.content[langCode].description}
-                              </p>
+                              <CKEditorReadOnly content={question.content[langCode].description} className="text-sm text-muted-foreground italic" />
                             </div>
                           )}
                         </div>

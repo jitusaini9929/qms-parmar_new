@@ -122,6 +122,11 @@
   body {
     @apply bg-background text-foreground;
   }
+  .question-content img {
+    max-width: 100%;
+    height: auto;
+    display: block;
+  }
 }
 
 @layer utilities {

@@ -81,35 +81,35 @@ export default function ViewQuestionPage({ params: paramsPromise }) {
                 {question.content[langCode].passage && (
                   <div className="bg-muted/30 border-l-4 border-primary p-6 rounded-r-lg">
                     <h4 className="text-xs font-bold uppercase text-primary mb-2">Passage / Context</h4>
-                    <p className="text-sm leading-relaxed whitespace-pre-wrap">{question.content[langCode].passage}</p>
+                    <p className="text-sm leading-relaxed whitespace-pre-wrap overflow-x-auto">{question.content[langCode].passage}</p>
                   </div>
                 )}
 
                 {/* Question Text */}
                 <div className="space-y-4">
                   <h4 className="text-xs font-bold uppercase text-muted-foreground">Question</h4>
-                  <p className="text-xl font-medium leading-snug">{question.content[langCode].text}</p>
+                  <p className="text-xl font-medium leading-snug overflow-x-auto">{question.content[langCode].text}</p>
                 </div>
 
                 {/* Options Section */}
                 <div className="grid gap-3">
                   <h4 className="text-xs font-bold uppercase text-muted-foreground mb-1">Options</h4>
                   {question.content[langCode].options.map((opt, idx) => (
-                    <div 
-                      key={idx} 
-                      className={`flex items-start gap-4 p-4 rounded-xl border transition-all ${
-                        opt.correctOption 
-                        ? "bg-emerald-500/10 border-emerald-500 ring-1 ring-emerald-500" 
-                        : "bg-background border-border"
-                      }`}
-                    >
-                      <div className={`flex items-center justify-center h-6 w-6 rounded-full text-xs font-bold shrink-0 mt-0.5 ${
-                        opt.correctOption ? "bg-emerald-500 text-white" : "bg-muted text-muted-foreground"
-                      }`}>
-                        {String.fromCharCode(65 + idx)}
+                      <div 
+                        key={idx} 
+                        className={`flex items-start gap-4 p-4 rounded-xl border transition-all ${
+                          opt.correctOption 
+                          ? "bg-emerald-500/10 border-emerald-500 ring-1 ring-emerald-500" 
+                          : "bg-background border-border"
+                        }`}
+                      >
+                        <div className={`flex items-center justify-center h-6 w-6 rounded-full text-xs font-bold shrink-0 mt-0.5 ${
+                          opt.correctOption ? "bg-emerald-500 text-white" : "bg-muted text-muted-foreground"
+                        }`}>
+                          {String.fromCharCode(65 + idx)}
+                        </div>
+                        <p className="text-sm font-medium overflow-x-auto">{opt.text}</p>
                       </div>
-                      <p className="text-sm font-medium">{opt.text}</p>
-                    </div>
                   ))}
                 </div>
 
@@ -119,7 +119,7 @@ export default function ViewQuestionPage({ params: paramsPromise }) {
                     {question.content[langCode].solution && (
                       <div className="space-y-2">
                         <h4 className="text-xs font-bold uppercase text-emerald-600">Step-by-step Solution</h4>
-                        <div className="p-4 bg-emerald-50/50 rounded-lg text-sm border border-emerald-100 whitespace-pre-wrap">
+                        <div className="p-4 bg-emerald-50/50 rounded-lg text-sm border border-emerald-100 whitespace-pre-wrap overflow-x-auto">
                           {question.content[langCode].solution}
                         </div>
                       </div>

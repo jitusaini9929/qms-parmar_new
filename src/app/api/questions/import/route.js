@@ -11,7 +11,7 @@ import Board from "@/models/Board";
 import { requireRole } from "@/lib/auth-guard";
 import slugify from "slugify";
 import crypto from "crypto";
-import { processContentImages } from "@/lib/s3";
+import { processContentImages, deleteImageFromS3 } from "@/lib/s3";
 
 /* -------------------------------------------------
    Utils + Canonical Cache
@@ -305,7 +305,6 @@ export async function POST(req) {
   if (denied) return denied;
 
   try {
-
     const { questions = [], hierarchy = {}, collection } = await req.json();
     if (!questions.length)
       return NextResponse.json(
@@ -419,23 +418,38 @@ export async function POST(req) {
       }
     }
 
-    /* ---------- Process images in content → upload to S3 ---------- */
-    for (let i = 0; i < docs.length; i++) {
-      if (docs[i].content && typeof docs[i].content === "object") {
-        const uniqueQId = docs[i].code || crypto.randomUUID();
-        docs[i].content = await processContentImages(
-          docs[i].content,
-          uniqueQId
-        );
-      }
+    /* ---------- Process images in content → upload to S3 (PARALLEL) ---------- */
+    const allUploadedUrls = [];
+    let totalFailedImages = 0;
+
+    // Process all questions in parallel for performance
+    const imageResults = await Promise.all(
+      docs.map(async (doc) => {
+        if (doc.content && typeof doc.content === "object") {
+          const uniqueQId = doc.code || crypto.randomUUID();
+          const result = await processContentImages(doc.content, uniqueQId);
+          doc.content = result.contentMap;
+          return { urls: result.uploadedUrls, failed: result.failed };
+        }
+        return { urls: [], failed: 0 };
+      })
+    );
+
+    // Aggregate results
+    for (const r of imageResults) {
+      allUploadedUrls.push(...r.urls);
+      totalFailedImages += r.failed;
     }
 
+    /* ---------- Insert questions into DB ---------- */
     let saved = [];
+    let insertError = null;
 
     try {
       saved = await Question.insertMany(docs, { ordered: false });
     } catch (err) {
       console.error("InsertMany error (expected with duplicates)");
+      insertError = err;
 
       if (err.result?.insertedDocs) {
         saved = err.result.insertedDocs;
@@ -443,12 +457,22 @@ export async function POST(req) {
         console.log("Duplicate errors:", err.writeErrors.length);
         saved = err.insertedDocs || [];
       } else {
+        // If the insert completely failed, roll back uploaded images
+        console.error("Complete insert failure, rolling back uploaded images...");
+        await Promise.all(allUploadedUrls.map((url) => deleteImageFromS3(url)));
         throw err;
       }
     }
 
+    // If no questions were saved but we uploaded images, clean them up
+    if (saved.length === 0 && allUploadedUrls.length > 0) {
+      console.warn("No questions saved but images were uploaded. Cleaning up...");
+      await Promise.all(allUploadedUrls.map((url) => deleteImageFromS3(url)));
+    }
+
     console.log("Saved count:", saved.length);
 
+    /* ---------- Create collection if requested ---------- */
     if (collection?.title && saved.length) {
       const body = {
         title: collection.title,
@@ -485,10 +509,19 @@ export async function POST(req) {
       }
     }
 
-    return NextResponse.json({
+    /* ---------- Build response ---------- */
+    const response = {
       success: true,
       count: saved.length,
-    });
+    };
+
+    if (totalFailedImages > 0) {
+      response.warnings = [
+        `${totalFailedImages} image(s) failed to migrate and were left unchanged.`,
+      ];
+    }
+
+    return NextResponse.json(response);
   } catch (err) {
     console.error("IMPORT_ERROR", err);
     return NextResponse.json({ message: err.message }, { status: 500 });

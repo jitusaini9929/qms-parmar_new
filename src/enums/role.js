@@ -70,8 +70,11 @@ export const API_ACCESS = [
   { path: '/api/users/profile',       method: 'ALL',  roles: [...ADMIN_ROLES, 'REVIEWER', 'CONTENT_WRITER'] },
   // Users — admin only
   { path: '/api/users',               method: 'ALL',  roles: ADMIN_ROLES },
-  // Boards — admin only for all operations
-  { path: '/api/boards',              method: 'ALL',  roles: ADMIN_ROLES },
+  // Boards — Content Writers need read access for question filter dropdowns
+  { path: '/api/boards',              method: 'GET',  roles: [...ADMIN_ROLES, 'CONTENT_WRITER'] },
+  { path: '/api/boards',              method: 'POST', roles: ADMIN_ROLES },
+  { path: '/api/boards',              method: 'PUT',  roles: ADMIN_ROLES },
+  { path: '/api/boards',              method: 'DELETE', roles: ADMIN_ROLES },
   // Exams  — Content Writers need read access for question filter dropdowns
   { path: '/api/exams',               method: 'GET',  roles: [...ADMIN_ROLES, 'CONTENT_WRITER'] },
   { path: '/api/exams',               method: 'POST', roles: ADMIN_ROLES },
